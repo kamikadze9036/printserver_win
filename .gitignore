@@ -15,7 +15,7 @@ venv/
 env/
 
 # Runtime data
-printserver_win/data/
+data/
 *.db
 *.db-shm
 *.db-wal
