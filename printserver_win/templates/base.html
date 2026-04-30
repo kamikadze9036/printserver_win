@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}HESS plastics // Print Server{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@400;600;700;900&family=Barlow+Condensed:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+{% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+{% block header %}
+<header>
+  <div class="h-logo">
+    <span class="big">HESS</span>
+    <span class="small">plastics</span>
+  </div>
+  <div class="h-divider"></div>
+  <div class="h-appname">PRINT SERVER</div>
+
+  <div class="h-right">
+    <div class="h-printers" id="h-printers">
+      <div class="h-printer"><span class="sdot sdot-grey"></span>LP0</div>
+      <div class="h-printer"><span class="sdot sdot-grey"></span>LP1</div>
+      <div class="h-printer"><span class="sdot sdot-grey"></span>GPIO</div>
+    </div>
+    <div class="h-clock" id="clock">--:--:--</div>
+    <div class="h-user">
+      <span id="h-uname">{{ session.username }}</span>
+      <span class="h-role {% if session.role == 'admin' %}role-admin{% endif %}" id="h-role">
+        {{ session.role | upper }}
+      </span>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block nav %}
+<nav>
+  <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="active"{% endif %}>TISK</a>
+  {% if session.role == 'admin' %}
+  <a href="{{ url_for('admin_page') }}" {% if request.endpoint == 'admin_page' %}class="active"{% endif %}>ADMIN</a>
+  {% endif %}
+  <a href="#" class="nav-logout" onclick="doLogout();return false;">ODHLÁSIT</a>
+</nav>
+{% endblock %}
+
+<main>
+{% block main %}{% endblock %}
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

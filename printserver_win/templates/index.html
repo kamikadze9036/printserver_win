@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% block title %}HESS plastics // Tisk{% endblock %}
+
+{% block main %}
+
+<!-- MODAL: Výběr produktu -->
+<div class="overlay hidden" id="ov-product">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>VÝBĚR PRODUKTŮ PRO TISK</h2>
+      <span class="step-tag">Vyberte produkt a šablonu pro každou stranu</span>
+    </div>
+    <div class="modal-body">
+      <div class="side-pick-grid">
+
+        <!-- LEVÁ -->
+        <div class="side-pick">
+          <div class="side-pick-header">
+            <div class="side-dot side-dot-L"></div>
+            <span>Levá strana</span>
+            <span class="printer-info" id="printer-info-L">—</span>
+          </div>
+          <div class="pick-scan-row">
+            <input type="text" id="pick-codeL" placeholder="SKENUJ NEBO KÓD…"
+                   onkeydown="if(event.key==='Enter')pickSearchAndNext('L')"
+                   oninput="clearPreview('L')" />
+            <button class="btn-scan" onclick="pickSearch('L')">OK</button>
+          </div>
+          <div class="product-preview hidden" id="prev-L">
+            <div class="pp-code" id="prev-L-code">—</div>
+            <div class="pp-row"><span class="pp-lbl">QR</span><span class="pp-val" id="prev-L-qr">—</span></div>
+            <div class="pp-row"><span class="pp-lbl">TEXT</span><span class="pp-val" id="prev-L-txt">—</span></div>
+          <div class="pp-row"><span class="pp-lbl">ŠABLONA</span><span class="pp-val" id="prev-L-tmpl" style="font-size:10px">—</span></div>
+          </div>
+          <div class="empty-pick" id="empty-L">Naskenujte nebo zadejte kód produktu</div>
+          <div class="pick-err hidden" id="err-L"></div>
+        </div>
+
+        <!-- PRAVÁ -->
+        <div class="side-pick">
+          <div class="side-pick-header">
+            <div class="side-dot side-dot-R"></div>
+            <span>Pravá strana</span>
+            <span class="printer-info" id="printer-info-R">—</span>
+          </div>
+          <div class="pick-scan-row">
+            <input type="text" id="pick-codeR" placeholder="SKENUJ NEBO KÓD…"
+                   onkeydown="if(event.key==='Enter')pickSearchAndConfirm('R')"
+                   oninput="clearPreview('R')" />
+            <button class="btn-scan" onclick="pickSearch('R')">OK</button>
+          </div>
+          <div class="product-preview hidden" id="prev-R">
+            <div class="pp-code" id="prev-R-code">—</div>
+            <div class="pp-row"><span class="pp-lbl">QR</span><span class="pp-val" id="prev-R-qr">—</span></div>
+            <div class="pp-row"><span class="pp-lbl">TEXT</span><span class="pp-val" id="prev-R-txt">—</span></div>
+          <div class="pp-row"><span class="pp-lbl">ŠABLONA</span><span class="pp-val" id="prev-R-tmpl" style="font-size:10px">—</span></div>
+          </div>
+          <div class="empty-pick" id="empty-R">Naskenujte nebo zadejte kód produktu</div>
+          <div class="pick-err hidden" id="err-R"></div>
+        </div>
+
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div style="display:flex;flex-direction:column;gap:6px;margin-right:auto;min-width:200px">
+        <label style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--grey-dk);text-transform:uppercase">Číslo výrobního příkazu</label>
+        <input type="text" id="inp-order-number" placeholder="volitelné"
+               style="font-family:var(--mono);font-size:14px;padding:8px 10px;border:1px solid var(--grey-mid);letter-spacing:1px;width:100%"
+               onkeydown="if(event.key==='Enter')confirmProducts()" />
+        <span style="font-size:10px;color:var(--grey-dk)">Zakázka je volitelná. Alespoň jedna strana musí mít produkt.</span>
+      </div>
+      <button class="btn btn-primary" style="width:auto;padding:10px 28px" onclick="confirmProducts()">ZAHÁJIT VÝROBU →</button>
+    </div>
+    <div style="text-align:right;padding:8px 20px 12px;border-top:1px solid var(--border)">
+      <a href="#" onclick="doAdminLoginRedirect();return false;"
+         style="font-size:11px;color:var(--grey-dk);text-decoration:none;letter-spacing:1px;font-family:var(--mono)">
+        ↓ Přihlásit jako admin
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- HLAVNÍ OBRAZOVKA -->
+<!-- VP BANNER -->
+<div id="vp-banner" style="display:none;background:var(--navy);color:var(--white);padding:12px 20px;margin-bottom:16px;display:flex;align-items:center;gap:20px;border-left:5px solid var(--ok)">
+  <div style="display:flex;flex-direction:column;gap:2px">
+    <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:#8899BB">AKTIVNÍ VÝROBNÍ PŘÍKAZ</div>
+    <div style="font-family:var(--cond);font-weight:900;font-size:20px;letter-spacing:2px" id="vp-number">—</div>
+  </div>
+  <div style="display:flex;gap:24px;margin-left:8px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+      <div style="font-family:var(--mono);font-size:10px;color:#8899BB">LEVÁ</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--left);letter-spacing:1px" id="vp-prod-L">—</div>
+      <div style="font-family:var(--mono);font-size:28px;font-weight:bold;color:var(--left);line-height:1" id="vp-count-L">0</div>
+      <div style="font-family:var(--mono);font-size:9px;color:#556677">ks</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+      <div style="font-family:var(--mono);font-size:10px;color:#8899BB">PRAVÁ</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--right);letter-spacing:1px" id="vp-prod-R">—</div>
+      <div style="font-family:var(--mono);font-size:28px;font-weight:bold;color:var(--right);line-height:1" id="vp-count-R">0</div>
+      <div style="font-family:var(--mono);font-size:9px;color:#556677">ks</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+      <div style="font-family:var(--mono);font-size:10px;color:#8899BB">CELKEM</div>
+      <div style="font-family:var(--mono);font-size:11px;color:transparent">—</div>
+      <div style="font-family:var(--mono);font-size:28px;font-weight:bold;color:var(--white);line-height:1" id="vp-count-total">0</div>
+      <div style="font-family:var(--mono);font-size:9px;color:#556677">ks</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:4px;margin-left:8px">
+    <div style="font-family:var(--mono);font-size:10px;color:#8899BB">ZAHÁJENO</div>
+    <div style="font-family:var(--mono);font-size:12px" id="vp-started">—</div>
+    <div style="font-family:var(--mono);font-size:10px;color:#8899BB;margin-top:4px">OPERÁTOR</div>
+    <div style="font-family:var(--mono);font-size:12px" id="vp-operator">—</div>
+  </div>
+  <div style="margin-left:auto;display:flex;gap:8px;flex-direction:column;align-items:flex-end">
+    <button onclick="finishOrder()"
+      style="padding:10px 20px;font-family:var(--cond);font-weight:700;font-size:14px;letter-spacing:1px;background:var(--err);color:#fff;border:none;cursor:pointer">
+      ⏹ UKONČIT VÝROBU
+    </button>
+    <button onclick="cancelOrder()"
+      style="padding:6px 20px;font-family:var(--cond);font-weight:700;font-size:11px;letter-spacing:1px;background:none;color:#8899BB;border:1px solid #334466;cursor:pointer">
+      ✕ ZRUŠIT VP
+    </button>
+  </div>
+</div>
+
+<div class="section-lbl">AKTUÁLNÍ TISK</div>
+<div class="print-grid">
+
+  <!-- LEVÁ -->
+  <div class="print-panel ppL">
+    <div class="pp-head">
+      <span class="pp-side-badge">Levá</span>
+      <span class="pp-title">STRANA L</span>
+      <span class="pp-printer-tag" id="pp-printer-tag-L">—</span>
+    </div>
+    <div class="pp-body">
+      <div class="selected-product" id="sp-L">
+        <div class="qr-thumb">{% include 'partials/qr_thumb.html' %}</div>
+        <div class="sp-info">
+          <div class="sp-code" id="sp-L-code">—</div>
+          <div class="sp-row"><span class="sp-lbl">QR</span><span class="sp-val" id="sp-L-qr">—</span></div>
+          <div class="sp-row"><span class="sp-lbl">TEXT</span><span class="sp-val" id="sp-L-txt">—</span></div>
+          <div class="sp-row"><span class="sp-lbl">ŠABLONA</span><span class="sp-val" id="sp-L-tmpl">—</span></div>
+        </div>
+        <button class="btn-change" onclick="openProductModal()">ZMĚNIT</button>
+      </div>
+
+      <div class="gpio-row">
+        <span class="gpio-lbl">GPIO</span>
+        <div class="gpio-pins">
+          <div class="gpin" id="gp-L1">17</div>
+          <div class="gpin" id="gp-L2">27</div>
+        </div>
+        <span class="gpio-status gpio-wait" id="gpio-L-st">● ČEKÁ</span>
+      </div>
+
+      <button class="btn-print disabled" id="btn-L" onclick="doPrint('L')">
+        ▶ TISKNOUT LEVOU
+      </button>
+    </div>
+  </div>
+
+  <!-- PRAVÁ -->
+  <div class="print-panel ppR">
+    <div class="pp-head">
+      <span class="pp-side-badge">Pravá</span>
+      <span class="pp-title">STRANA P</span>
+      <span class="pp-printer-tag" id="pp-printer-tag-R">—</span>
+    </div>
+    <div class="pp-body">
+      <div class="no-product" id="np-R">Žádný produkt nevybrán</div>
+      <div class="selected-product hidden" id="sp-R">
+        <div class="qr-thumb">{% include 'partials/qr_thumb.html' %}</div>
+        <div class="sp-info">
+          <div class="sp-code" id="sp-R-code">—</div>
+          <div class="sp-row"><span class="sp-lbl">QR</span><span class="sp-val" id="sp-R-qr">—</span></div>
+          <div class="sp-row"><span class="sp-lbl">TEXT</span><span class="sp-val" id="sp-R-txt">—</span></div>
+          <div class="sp-row"><span class="sp-lbl">ŠABLONA</span><span class="sp-val" id="sp-R-tmpl">—</span></div>
+        </div>
+        <button class="btn-change" onclick="openProductModal()">ZMĚNIT</button>
+      </div>
+
+      <div class="gpio-row">
+        <span class="gpio-lbl">GPIO</span>
+        <div class="gpio-pins">
+          <div class="gpin" id="gp-R1">22</div>
+          <div class="gpin" id="gp-R2">23</div>
+        </div>
+        <span class="gpio-status gpio-wait" id="gpio-R-st">● ČEKÁ</span>
+      </div>
+
+      <button class="btn-print disabled" id="btn-R" onclick="doPrint('R')">
+        ▶ TISKNOUT PRAVOU
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- LOG -->
+<div style="margin-top:20px">
+  <div class="section-lbl">HISTORIE TISKU</div>
+  <div class="log-wrap">
+    <div class="log-head">
+      <span class="log-head-title">LOG AKTIVIT</span>
+      <span class="log-head-meta" id="log-meta">—</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Datum</th><th>Čas</th><th>Uživatel</th>
+          <th>Produkt</th><th>Strana</th><th>Šablona</th>
+          <th>Trigger</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="log-body">
+        <tr><td colspan="8" style="text-align:center;color:var(--grey-dk);padding:20px;font-size:12px">Načítám…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+{% endblock %}

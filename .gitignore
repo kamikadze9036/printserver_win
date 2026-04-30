@@ -1,0 +1,30 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Local assistant / tool settings
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Runtime data
+printserver_win/data/
+*.db
+*.db-shm
+*.db-wal
+*.prn
+*.log
+
+# Build / distribution archives
+*.zip
+
+# Local temp files
+tmp/
+temp/

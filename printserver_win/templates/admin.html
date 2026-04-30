@@ -1,0 +1,486 @@
+{% extends "base.html" %}
+{% block title %}HESS plastics // Admin{% endblock %}
+{% block body_class %}admin-body{% endblock %}
+
+{% block header %}
+<header class="header-admin">
+  <div class="h-logo"><span class="big">HESS</span><span class="small">plastics</span></div>
+  <div class="h-divider"></div>
+  <div class="h-appname">PRINT SERVER</div>
+  <span class="admin-badge">ADMIN PANEL</span>
+  <div class="h-right">
+    <div class="h-clock" id="clock">--:--:--</div>
+    <div class="h-user">
+      <span>{{ session.username }}</span>
+      <span class="h-role role-admin">ADMIN</span>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block nav %}
+<nav>
+  <a href="{{ url_for('index') }}">← TISK</a>
+  <a href="{{ url_for('admin_page') }}" class="active">ADMIN</a>
+  <a href="{{ url_for('debug_page') }}">DEBUG</a>
+  <a href="#" class="nav-logout" onclick="doLogout();return false;">ODHLÁSIT</a>
+</nav>
+
+<div class="tab-bar">
+  <div class="tab active" id="tab-products" onclick="switchTab('products')">📦 Produkty</div>
+  <div class="tab" id="tab-templates" onclick="switchTab('templates')">🏷 Šablony</div>
+  <div class="tab" id="tab-users" onclick="switchTab('users')">👤 Uživatelé</div>
+  <div class="tab" id="tab-settings" onclick="switchTab('settings')">⚙️ Nastavení</div>
+  <div class="tab" id="tab-orders" onclick="switchTab('orders')">📋 Výrobní příkazy</div>
+</div>
+{% endblock %}
+
+{% block main %}
+
+<!-- ══ TAB: PRODUKTY ══ -->
+<div class="tab-content active" id="content-products">
+  <div class="section-lbl">Správa produktů</div>
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">PRODUKTY</span>
+      <a class="btn btn-ghost btn-sm" href="/api/products/csv_export">⬇ EXPORT CSV</a>
+      <button class="btn btn-ghost btn-sm" onclick="openCsvModal()">⬆ IMPORT CSV</button>
+      <button class="btn btn-admin btn-sm" onclick="openProductModal()">+ PŘIDAT</button>
+    </div>
+    <div class="card-body">
+      <table>
+        <thead>
+          <tr><th>Kód produktu</th><th>Strana</th><th>Šablona</th><th>QR obsah</th><th>Text na štítku</th><th>Upraveno</th><th style="width:230px">Akce</th></tr>
+        </thead>
+        <tbody id="product-table">
+          <tr><td colspan="5" class="td-loading">Načítám…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB: ŠABLONY ══ -->
+<div class="tab-content" id="content-templates">
+  <div class="section-lbl">Správa šablon</div>
+
+  <div class="card" id="tmpl-list-card">
+    <div class="card-head">
+      <span class="card-title">ŠABLONY</span>
+      <button class="btn btn-admin btn-sm" onclick="newTemplate()">+ NOVÁ</button>
+    </div>
+    <div class="card-body">
+      <table>
+        <thead>
+          <tr><th>Název</th><th>Rozměr (mm)</th><th>Prvků</th><th style="width:160px">Akce</th></tr>
+        </thead>
+        <tbody id="tmpl-table">
+          <tr><td colspan="4" class="td-loading">Načítám…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="tmpl-editor-wrap" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="section-lbl" style="margin:0;flex:1">Editor šablony</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeTemplateEditor()" style="margin-left:16px">← ZPĚT</button>
+    </div>
+    <div class="tmpl-editor">
+      <div class="tmpl-form">
+        <input type="hidden" id="tmpl-edit-id" value="" />
+        <div class="card">
+          <div class="card-head"><span class="card-title">ZÁKLADNÍ NASTAVENÍ</span></div>
+          <div class="card-body" style="padding:16px">
+            <div class="tmpl-header-fields">
+              <div class="field"><label>Název šablony</label>
+                <input type="text" id="tmpl-name" oninput="renderPreview()" />
+              </div>
+              <div class="field"><label>Šířka (mm)</label>
+                <input type="number" id="tmpl-w" value="60" min="10" max="300" oninput="renderPreview()" />
+              </div>
+              <div class="field"><label>Výška (mm)</label>
+                <input type="number" id="tmpl-h" value="40" min="10" max="300" oninput="renderPreview()" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">PRVKY ŠTÍTKU</span>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="addElement('qr')">+ QR KÓD</button>
+              <button class="btn btn-blue btn-sm" onclick="addElement('text')">+ TEXT</button>
+            </div>
+          </div>
+          <div class="card-body" style="padding:16px;display:flex;flex-direction:column;gap:10px">
+            <div id="elements-list"></div>
+            <p class="field-hint">
+              Proměnné:
+              <code>{product_code}</code> <code>{qr_content}</code>
+              <code>{text_content}</code> <code>{text1}</code> <code>{text2}</code> <code>{text3}</code> <code>{text4}</code> <code>{date}</code>
+              <code>{time}</code> <code>{datetime_iso}</code> <code>{operator}</code>
+            </p>
+          </div>
+        </div>
+
+        <button class="btn btn-admin" style="width:100%" onclick="saveTemplate()">💾 ULOŽIT ŠABLONU</button>
+      </div>
+
+      <div class="tmpl-preview">
+        <div class="preview-label">Náhled štítku (orientační)</div>
+        <div class="preview-wrap">
+          <div class="label-canvas-wrap">
+            <div class="label-canvas" id="label-canvas"></div>
+          </div>
+          <div class="preview-info" id="preview-info"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB: UŽIVATELÉ ══ -->
+<div class="tab-content" id="content-users">
+  <div class="section-lbl">Správa uživatelů</div>
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">UŽIVATELÉ</span>
+      <button class="btn btn-admin btn-sm" onclick="openUserModal()">+ PŘIDAT</button>
+    </div>
+    <div class="card-body">
+      <table>
+        <thead>
+          <tr><th>Uživatelské jméno</th><th>Role</th><th>PIN</th><th style="width:130px">Akce</th></tr>
+        </thead>
+        <tbody id="user-table">
+          <tr><td colspan="3" class="td-loading">Načítám…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB: NASTAVENÍ ══ -->
+<div class="tab-content" id="content-settings">
+  <div class="section-lbl">Nastavení tiskáren</div>
+  <div class="card">
+    <div class="card-head"><span class="card-title">TISKÁRNY</span></div>
+    <div class="card-body" style="display:flex;flex-direction:column;gap:16px">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+        <div style="border:2px solid var(--left);padding:16px;display:flex;flex-direction:column;gap:10px">
+          <div style="font-family:var(--cond);font-weight:900;font-size:16px;letter-spacing:2px;color:var(--left)">
+            ▌ LEVÁ TISKÁRNA
+          </div>
+          <div class="field">
+            <label>Název tiskárny (z Windows)</label>
+            <select id="set-printer-left" style="font-family:var(--mono);font-size:13px">
+              <option value="">— Načítám… —</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>DPI levé tiskárny</label>
+            <select id="set-dpi-left">
+              <option value="203">203 DPI (standard / "200 DPI")</option>
+              <option value="300">300 DPI (high res)</option>
+              <option value="600">600 DPI (ultra)</option>
+              <option value="custom">— vlastní hodnota —</option>
+            </select>
+            <input type="number" id="set-dpi-left-custom" min="100" max="600"
+                   placeholder="Vlastní DPI (např. 203)"
+                   style="display:none;margin-top:6px;font-family:var(--mono);font-size:13px;padding:8px;border:1px solid var(--grey-mid);width:100%" />
+          </div>
+          <div class="field">
+            <label>Protokol</label>
+            <select id="set-protocol-left">
+              <option value="tspl">TSPL (čínské tiskárny)</option>
+              <option value="zpl">ZPL (Zebra)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Kódování znaků</label>
+            <select id="set-encoding-left">
+              <option value="utf-8">UTF-8 (výchozí)</option>
+              <option value="latin-1">Latin-1</option>
+              <option value="cp1250">CP1250 (Windows CZ)</option>
+            </select>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--grey-dk)" id="set-left-status">—</div>
+        </div>
+
+        <div style="border:2px solid var(--right);padding:16px;display:flex;flex-direction:column;gap:10px">
+          <div style="font-family:var(--cond);font-weight:900;font-size:16px;letter-spacing:2px;color:var(--right)">
+            ▌ PRAVÁ TISKÁRNA
+          </div>
+          <div class="field">
+            <label>Název tiskárny (z Windows)</label>
+            <select id="set-printer-right" style="font-family:var(--mono);font-size:13px">
+              <option value="">— Načítám… —</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>DPI pravé tiskárny</label>
+            <select id="set-dpi-right">
+              <option value="203">203 DPI (standard / "200 DPI")</option>
+              <option value="300">300 DPI (high res)</option>
+              <option value="600">600 DPI (ultra)</option>
+              <option value="custom">— vlastní hodnota —</option>
+            </select>
+            <input type="number" id="set-dpi-right-custom" min="100" max="600"
+                   placeholder="Vlastní DPI (např. 203)"
+                   style="display:none;margin-top:6px;font-family:var(--mono);font-size:13px;padding:8px;border:1px solid var(--grey-mid);width:100%" />
+          </div>
+          <div class="field">
+            <label>Protokol</label>
+            <select id="set-protocol-right">
+              <option value="tspl">TSPL (čínské tiskárny)</option>
+              <option value="zpl">ZPL (Zebra)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Kódování znaků</label>
+            <select id="set-encoding-right">
+              <option value="utf-8">UTF-8 (výchozí)</option>
+              <option value="latin-1">Latin-1</option>
+              <option value="cp1250">CP1250 (Windows CZ)</option>
+            </select>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--grey-dk)" id="set-right-status">—</div>
+        </div>
+
+      </div>
+
+
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-admin" onclick="saveSettings()">💾 ULOŽIT NASTAVENÍ</button>
+        <span style="font-size:12px;color:var(--grey-dk)">Změny se projeví okamžitě bez restartu serveru.</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB: VÝROBNÍ PŘÍKAZY ══ -->
+<div class="tab-content" id="content-orders">
+  <div class="section-lbl">Historie výrobních příkazů</div>
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">VÝROBNÍ PŘÍKAZY</span>
+      <button class="btn btn-ghost btn-sm" onclick="loadOrders()">↻ OBNOVIT</button>
+    </div>
+    <div class="card-body">
+      <table>
+        <thead>
+          <tr>
+            <th>Číslo VP</th>
+            <th>Operátor</th>
+            <th>Produkt L</th>
+            <th>Produkt P</th>
+            <th>Zahájeno</th>
+            <th>Ukončeno</th>
+            <th style="text-align:center">Ks L</th>
+            <th style="text-align:center">Ks P</th>
+            <th style="text-align:center">Celkem</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="orders-table">
+          <tr><td colspan="10" class="td-loading">Načítám…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Produkt ══ -->
+<div class="modal-bg hidden" id="modal-product">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-product-title">NOVÝ PRODUKT</h3>
+      <button class="modal-close" onclick="closeModal('modal-product')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mp-id" value="" />
+      <div class="field"><label>Kód produktu</label>
+        <input type="text" id="mp-code" placeholder="FG 001235" />
+      </div>
+      <div class="field"><label>QR obsah</label>
+        <input type="text" id="mp-qr" placeholder="https://erp.local/fg/001235" />
+        <span class="field-hint">URL nebo text zakódovaný do QR kódu</span>
+      </div>
+      <div class="field"><label>Textový obsah (text1 / text_content)</label>
+        <textarea id="mp-txt" rows="2" placeholder="MOTOR SESTAVA A / LOT 2024Q4"></textarea>
+      </div>
+      <div class="field"><label>Text 2</label>
+        <textarea id="mp-txt2" rows="2" placeholder="volitelné"></textarea>
+      </div>
+      <div class="field"><label>Text 3</label>
+        <textarea id="mp-txt3" rows="2" placeholder="volitelné"></textarea>
+      </div>
+      <div class="field"><label>Text 4</label>
+        <textarea id="mp-txt4" rows="2" placeholder="volitelné"></textarea>
+      </div>
+      <div class="field">
+        <label>Strana tiskárny</label>
+        <select id="mp-side">
+          <option value="L">LEVÁ tiskárna</option>
+          <option value="R">PRAVÁ tiskárna</option>
+          <option value="both" selected>OBĚ (lze tisknout na obě strany)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Šablona štítku</label>
+        <select id="mp-template">
+          <option value="">— Načítám šablony… —</option>
+        </select>
+        <span class="field-hint">Šablona se použije automaticky při scanu produktu</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-product')">ZRUŠIT</button>
+      <button class="btn btn-admin" onclick="saveProduct()">ULOŽIT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Uživatel ══ -->
+<div class="modal-bg hidden" id="modal-user">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>NOVÝ UŽIVATEL</h3>
+      <button class="modal-close" onclick="closeModal('modal-user')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Uživatelské jméno</label>
+        <input type="text" id="mu-name" placeholder="operator2" autocomplete="off" />
+      </div>
+      <div class="field"><label>Heslo</label>
+        <input type="password" id="mu-pass" placeholder="••••••" autocomplete="new-password" />
+      </div>
+      <div class="field"><label>Role</label>
+        <select id="mu-role" onchange="document.getElementById('mu-pin-row').style.display=this.value==='user'?'block':'none'">
+          <option value="user">Uživatel (operátor)</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div class="field" id="mu-pin-row" style="display:none"><label>PIN (4–8 číslic, volitelné)</label>
+        <input type="password" id="mu-pin" placeholder="1234" inputmode="numeric" pattern="[0-9]*" autocomplete="new-password" />
+        <span class="field-hint">Pokud zadáte PIN, operátor se může přihlásit bez hesla přes PIN login.</span>
+      </div>
+      <button class="btn btn-ghost" onclick="closeModal('modal-user')">ZRUŠIT</button>
+      <button class="btn btn-admin" onclick="saveUser()">ULOŽIT</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// switchTab inline -- nezavisi na nacitani admin.js
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(function(c) {
+    c.classList.remove('active');
+  });
+  document.querySelectorAll('.tab').forEach(function(t) {
+    t.classList.remove('active');
+  });
+  var content = document.getElementById('content-' + tab);
+  var tabEl   = document.getElementById('tab-' + tab);
+  if (content) content.classList.add('active');
+  if (tabEl)   tabEl.classList.add('active');
+
+  // Nacti data pri prvnim zobrazeni
+  if (tab === 'templates' && !window._tmplLoaded) {
+    window._tmplLoaded = true;
+    loadTemplateList();
+  }
+  if (tab === 'users' && !window._usersLoaded) {
+    window._usersLoaded = true;
+    loadUsers();
+  }
+  if (tab === 'settings') {
+    loadSettings();
+  }
+  if (tab === 'orders') {
+    loadOrders();
+  }
+}
+</script>
+
+<div class="modal-bg hidden" id="modal-csv">
+  <div class="modal" style="max-width:780px;width:95%">
+    <div class="modal-head">
+      <h3>IMPORT PRODUKTŮ Z CSV</h3>
+      <button class="modal-close" onclick="closeCsvModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Krok 1: výběr souboru -->
+      <div id="csv-step-upload">
+        <p class="field-hint" style="margin-bottom:12px">
+          Povinné sloupce: <code>product_code</code>, <code>qr_content</code><br>
+          Volitelné: <code>text_content</code>, <code>text2</code>, <code>text3</code>, <code>text4</code>, <code>side</code> (L/R/both), <code>template_id</code><br>
+          Oddělovač: čárka nebo středník. Kódování: UTF-8 nebo CP1250.
+        </p>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="file" id="csv-file-input" accept=".csv,text/csv" style="flex:1" />
+          <button class="btn btn-admin" onclick="csvPreview()">NAČÍST NÁHLED</button>
+        </div>
+        <div id="csv-upload-err" style="color:var(--err);margin-top:8px;font-size:13px"></div>
+      </div>
+
+      <!-- Krok 2: náhled -->
+      <div id="csv-step-preview" class="hidden">
+        <div id="csv-summary" style="margin-bottom:10px;font-size:13px"></div>
+        <div style="max-height:340px;overflow-y:auto">
+          <table id="csv-preview-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Kód produktu</th><th>QR obsah</th>
+                <th>Text</th><th>Strana</th><th>Šablona</th><th>Stav</th>
+              </tr>
+            </thead>
+            <tbody id="csv-preview-body"></tbody>
+          </table>
+        </div>
+        <div id="csv-preview-errors" style="color:var(--err);margin-top:8px;font-size:12px"></div>
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <button class="btn btn-ghost" onclick="csvReset()">← ZPĚT</button>
+          <button class="btn btn-admin" id="csv-import-btn" onclick="csvImport()">⬆ IMPORTOVAT</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg hidden" id="modal-pin">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-head">
+      <h3>NASTAVIT PIN</h3>
+      <button class="modal-close" onclick="closeModal('modal-pin')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="pin-modal-id" />
+      <p style="margin-bottom:12px">Operátor: <strong id="pin-modal-name"></strong></p>
+      <div class="field"><label>Nový PIN (4–8 číslic)</label>
+        <input type="password" id="pin-modal-val" placeholder="1234" inputmode="numeric"
+               pattern="[0-9]*" autocomplete="new-password"
+               onkeydown="if(event.key==='Enter')savePin()" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-pin')">ZRUŠIT</button>
+      <button class="btn btn-admin" onclick="savePin()">ULOŽIT PIN</button>
+    </div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

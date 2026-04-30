@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HESS plastics // Přihlášení</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@400;600;700;900&family=Barlow+Condensed:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+<style>
+  body { background:var(--navy-dk); display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .login-card { background:var(--navy); border:1px solid var(--border); border-radius:12px; padding:32px; width:100%; max-width:380px; }
+  .login-head { text-align:center; margin-bottom:28px; }
+  .hess-wordmark { display:flex; align-items:baseline; justify-content:center; gap:6px; }
+  .hess-wordmark .big   { font-size:2.2rem; font-weight:900; color:var(--purple); letter-spacing:2px; }
+  .hess-wordmark .small { font-size:1rem; font-weight:600; color:var(--grey); letter-spacing:4px; text-transform:uppercase; }
+  .login-sub { color:var(--grey-dk); font-size:11px; letter-spacing:3px; margin-top:4px; }
+  .field { margin-bottom:16px; }
+  .field label { display:block; font-size:11px; color:var(--grey-dk); letter-spacing:1px; margin-bottom:5px; text-transform:uppercase; }
+  .field input { width:100%; box-sizing:border-box; }
+  .login-err { color:var(--err); font-size:13px; min-height:18px; margin-bottom:10px; text-align:center; }
+  .switch-link { text-align:center; margin-top:16px; }
+  .switch-link a { color:var(--grey-dk); font-size:11px; text-decoration:none; letter-spacing:1px; cursor:pointer; }
+  .switch-link a:hover { color:var(--grey); }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="login-head">
+    <div class="hess-wordmark">
+      <span class="big">HESS</span>
+      <span class="small">plastics</span>
+    </div>
+    <div class="login-sub">PRINT SERVER SYSTEM</div>
+  </div>
+
+  <!-- PIN přihlášení (výchozí) -->
+  <div id="section-pin">
+    <div class="field">
+      <label>PIN operátora</label>
+      <input type="password" id="inp-pin" placeholder="Naskenujte nebo zadejte PIN"
+             inputmode="numeric" autocomplete="new-password" autofocus
+             oninput="onPinInput()" />
+    </div>
+    <div class="login-err" id="pin-err"></div>
+    <div class="switch-link"><a onclick="showAdmin()">↓ Admin přihlášení</a></div>
+  </div>
+
+  <!-- Admin přihlášení -->
+  <div id="section-admin" style="display:none">
+    <div class="field">
+      <label>Uživatelské jméno</label>
+      <input type="text" id="inp-user" placeholder="admin" autocomplete="off"
+             onkeydown="if(event.key==='Enter')document.getElementById('inp-pass').focus()" />
+    </div>
+    <div class="field">
+      <label>Heslo</label>
+      <input type="password" id="inp-pass" placeholder="••••••" autocomplete="off"
+             onkeydown="if(event.key==='Enter')doAdminLogin()" />
+    </div>
+    <div class="login-err" id="admin-err"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="doAdminLogin()">PŘIHLÁSIT SE</button>
+    <div class="switch-link"><a onclick="showPin()">↑ PIN přihlášení</a></div>
+  </div>
+</div>
+
+<script>
+let _operators = [];
+
+async function loadOperators() {
+  try {
+    const r = await fetch('/api/login/operators');
+    _operators = await r.json();
+  } catch(e) { _operators = []; }
+}
+
+async function onPinInput() {
+  const pin = document.getElementById('inp-pin').value.trim();
+  document.getElementById('pin-err').textContent = '';
+  // Automaticky zkus po 4+ znacích (debounce 400ms)
+  if (pin.length < 4) return;
+  clearTimeout(window._pinTimer);
+  window._pinTimer = setTimeout(() => tryPin(pin), 400);
+}
+
+async function tryPin(pin) {
+  // Najdi operátora s tímto PINem – zkus každého
+  for (const op of _operators) {
+    try {
+      const r = await fetch('/api/login/pin', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: op.id, pin})
+      });
+      if (r.ok) {
+        window.location.href = '/';
+        return;
+      }
+    } catch(e) {}
+  }
+  document.getElementById('pin-err').textContent = 'Nesprávný PIN';
+  document.getElementById('inp-pin').value = '';
+  document.getElementById('inp-pin').focus();
+}
+
+async function doAdminLogin() {
+  const user = document.getElementById('inp-user').value.trim();
+  const pass = document.getElementById('inp-pass').value;
+  const err  = document.getElementById('admin-err');
+  err.textContent = '';
+  if (!user || !pass) { err.textContent = 'Zadejte jméno a heslo.'; return; }
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: user, password: pass})
+    });
+    const d = await r.json();
+    if (r.ok) { window.location.href = '/'; }
+    else { err.textContent = d.error || 'Chyba přihlášení'; }
+  } catch(e) {
+    err.textContent = 'Chyba spojení.';
+  }
+}
+
+function showAdmin() {
+  document.getElementById('section-pin').style.display = 'none';
+  document.getElementById('section-admin').style.display = 'block';
+  setTimeout(() => document.getElementById('inp-user').focus(), 100);
+}
+
+function showPin() {
+  document.getElementById('section-admin').style.display = 'none';
+  document.getElementById('section-pin').style.display = 'block';
+  setTimeout(() => document.getElementById('inp-pin').focus(), 100);
+}
+
+loadOperators();
+document.getElementById('inp-pin').value = '';
+if (new URLSearchParams(window.location.search).get('admin') === '1') { showAdmin(); }
+</script>
+</body>
+</html>

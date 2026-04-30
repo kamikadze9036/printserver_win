@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}HESS plastics // Debug{% endblock %}
+
+{% block header %}
+<header class="header-admin">
+  <div class="h-logo"><span class="big">HESS</span><span class="small">plastics</span></div>
+  <div class="h-divider"></div>
+  <div class="admin-badge">DEBUG PANEL</div>
+  <div class="h-right">
+    <div class="h-clock" id="clock">--:--:--</div>
+  </div>
+</header>
+{% endblock %}
+
+{% block nav %}
+<nav>
+  <a href="{{ url_for('index') }}">← TISK</a>
+  <a href="{{ url_for('admin_page') }}">ADMIN</a>
+  <a href="{{ url_for('debug_page') }}" class="active">DEBUG</a>
+  <a href="#" class="nav-logout" onclick="doLogout();return false;">ODHLÁSIT</a>
+</nav>
+{% endblock %}
+
+{% block main %}
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">SYSTÉM</span>
+      <button class="btn btn-ghost btn-sm" onclick="loadSystem()">↻</button>
+    </div>
+    <div class="card-body">
+      <div id="sysinfo"><div class="td-loading">Načítám…</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span class="card-title">TISKÁRNY</span></div>
+    <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+      <div class="printer-cards">
+        <div class="pcard" id="pcard-L">
+          <div class="pcard-name">LEVÁ (LP0)</div>
+          <div class="pcard-status"><span class="sdot sdot-grey" id="pdot-L"></span><span id="ptxt-L">…</span></div>
+          <div class="pcard-dev" id="pcard-dev-L">—</div>
+        </div>
+        <div class="pcard" id="pcard-R">
+          <div class="pcard-name">PRAVÁ (LP1)</div>
+          <div class="pcard-status"><span class="sdot sdot-grey" id="pdot-R"></span><span id="ptxt-R">…</span></div>
+          <div class="pcard-dev" id="pcard-dev-R">—</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ok btn-sm" onclick="testPrint('L')">▶ TEST LEVÁ</button>
+        <button class="btn btn-blue btn-sm" onclick="testPrint('R')">▶ TEST PRAVÁ</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadStatus()">↻ STAV</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><span class="card-title">GPIO TRIGGERY</span></div>
+  <div class="card-body">
+    <div class="gpio-cards">
+      <div class="gcard">
+        <div class="gcard-head">
+          <div class="gpin-big" id="gpio-dot-L">17</div>
+          <div>
+            <div class="gcard-title">LEVÁ STRANA</div>
+            <div class="gcard-info">Pin: GPIO 17 (BCM) · FALLING · pull-up · debounce 300ms</div>
+          </div>
+        </div>
+        <div class="gcard-btns">
+          <button class="btn btn-warn btn-sm" onclick="simGpio('L')">⚡ SIMULOVAT</button>
+          <span id="gpio-last-L" class="gpio-last">—</span>
+        </div>
+      </div>
+      <div class="gcard">
+        <div class="gcard-head">
+          <div class="gpin-big" id="gpio-dot-R">22</div>
+          <div>
+            <div class="gcard-title">PRAVÁ STRANA</div>
+            <div class="gcard-info">Pin: GPIO 22 (BCM) · FALLING · pull-up · debounce 300ms</div>
+          </div>
+        </div>
+        <div class="gcard-btns">
+          <button class="btn btn-warn btn-sm" onclick="simGpio('R')">⚡ SIMULOVAT</button>
+          <span id="gpio-last-R" class="gpio-last">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">TSPL NÁHLED</span>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="loadTspl('L')">LEVÁ</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadTspl('R')">PRAVÁ</button>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="tspl-wrap">
+      <div class="tspl-side">
+        <div class="tspl-label">Levá strana</div>
+        <div class="tspl-code" id="tspl-L"><span class="tspl-empty">Klikni LEVÁ</span></div>
+      </div>
+      <div class="tspl-side">
+        <div class="tspl-label">Pravá strana</div>
+        <div class="tspl-code" id="tspl-R"><span class="tspl-empty">Klikni PRAVÁ</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">LOG SOUBOR</span>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="loadLogs()">↻</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearDisplay()">✕ VYČISTIT</button>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="log-toolbar">
+      <div class="log-filter">
+        <button class="lf-btn active" onclick="setFilter('ALL',this)">VŠE</button>
+        <button class="lf-btn" onclick="setFilter('INFO',this)">INFO</button>
+        <button class="lf-btn" onclick="setFilter('WARNING',this)">WARN</button>
+        <button class="lf-btn" onclick="setFilter('ERROR',this)">ERROR</button>
+      </div>
+      <input class="log-search" type="text" id="log-search" placeholder="Hledat…" oninput="renderLog()" />
+      <label class="log-auto">
+        <input type="checkbox" id="log-auto" checked onchange="toggleAuto(this.checked)" />
+        Auto 5s
+      </label>
+    </div>
+    <div class="log-console" id="log-console"></div>
+    <div class="log-stats" id="log-stats"></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/debug.js') }}"></script>
+{% endblock %}
