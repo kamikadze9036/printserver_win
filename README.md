@@ -111,6 +111,10 @@ Změňte hesla po prvním přihlášení v Admin → Uživatelé.
 
 ## Automatické spuštění po startu Windows
 
+Nejjednodušší varianta pro Windows 11 Pro je naplánovaná úloha při
+přihlášení uživatele. Spustí server a potom otevře prohlížeč s hlavní
+obrazovkou.
+
 PowerShell spusť jako správce a vlož:
 
 ```powershell
@@ -129,6 +133,12 @@ schtasks /Run /TN "Print Server Autostart"
 
 Pokud je projekt v jiné složce než `C:\PrintServer`, změň v prvním příkazu
 hodnotu `$dir`.
+
+Zastavení serveru:
+
+```bat
+taskkill /f /im python.exe
+```
 
 ---
 
@@ -286,35 +296,6 @@ Nebo Debug panel → GPIO → SIMULOVAT.
 GPIO_MODE              = 'serial'
 GPIO_SERIAL_PORT_LEFT  = 'COM3'
 GPIO_SERIAL_PORT_RIGHT = 'COM4'
-```
-
----
-
-## Automatický start
-
-### Task Scheduler (doporučeno)
-```
-taskschd.msc → Vytvořit základní úlohu
-  Trigger:   Při spuštění počítače
-  Program:   C:\PrintServer\printserver_win\venv\Scripts\python.exe
-  Argumenty: app.py
-  Spustit v: C:\PrintServer\printserver_win
-  Vlastnosti → Spustit bez ohledu na přihlášení uživatele
-```
-
-### Zastavení
-```bat
-taskkill /f /im python.exe
-:: nebo Task Manager → python.exe → Ukončit úlohu
-:: nebo Task Scheduler → HessPrintServer → Ukončit
-```
-
-### NSSM (Windows Service)
-```bat
-nssm install HessPrintServer
-nssm start HessPrintServer
-nssm stop HessPrintServer
-nssm remove HessPrintServer
 ```
 
 ---
