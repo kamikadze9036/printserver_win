@@ -2,6 +2,9 @@
 
 Tiskový server pro dvě USB etiketové tiskárny. Webové rozhraní přístupné z libovolného zařízení v síti.
 
+Pro provozní návod pro tým leadery, předáky a operátory viz
+[NAVOD_PRO_VYROBU.md](NAVOD_PRO_VYROBU.md).
+
 ---
 
 ## Rychlý start
