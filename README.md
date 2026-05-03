@@ -109,6 +109,27 @@ Změňte hesla po prvním přihlášení v Admin → Uživatelé.
 6. http://localhost:5000
 ```
 
+## Automatické spuštění po startu Windows
+
+PowerShell spusť jako správce a vlož:
+
+```powershell
+$dir = "C:\PrintServer"; $bat = "$dir\autostart.bat"; Set-Content -Path $bat -Encoding ASCII -Value '@echo off', "cd /d $dir", 'start "Print Server" /min "C:\PrintServer\start.bat"', 'timeout /t 8 /nobreak >nul', 'start "" "http://localhost:5000"', 'exit /b'; schtasks /Create /TN "Print Server Autostart" /TR "`"$bat`"" /SC ONLOGON /RL HIGHEST /F
+```
+
+Příkaz vytvoří `C:\PrintServer\autostart.bat` a naplánovanou úlohu
+`Print Server Autostart`. Po přihlášení do Windows se spustí server a po
+8 sekundách se otevře prohlížeč na `http://localhost:5000`.
+
+Otestovat bez restartu:
+
+```powershell
+schtasks /Run /TN "Print Server Autostart"
+```
+
+Pokud je projekt v jiné složce než `C:\PrintServer`, změň v prvním příkazu
+hodnotu `$dir`.
+
 ---
 
 ## Nastavení tiskáren
