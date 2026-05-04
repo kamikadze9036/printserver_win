@@ -138,6 +138,10 @@ schtasks /Run /TN "Print Server Autostart"
 Pokud je projekt v jiné složce než `C:\PrintServer`, změň v prvním příkazu
 hodnotu `$dir`.
 
+```powershell
+$dir = "D:\PrintServer"; Set-Content -Path "$dir\autostart.vbs" -Encoding ASCII -Value "CreateObject(""WScript.Shell"").Run ""cmd /c cd /d D:\PrintServer && start.bat"", 0, False"; $bat = "$dir\autostart.bat"; Set-Content -Path $bat -Encoding ASCII -Value '@echo off', 'timeout /t 8 /nobreak >nul', 'start "" "http://localhost:5000"', 'exit /b'; schtasks /Create /TN "Print Server Autostart" /TR "wscript.exe `"D:\PrintServer\autostart.vbs`"" /SC ONLOGON /RL HIGHEST /F
+```
+
 Zastavení serveru:
 
 ```bat
