@@ -115,40 +115,41 @@ Změňte hesla po prvním přihlášení v Admin → Uživatelé.
 
 ## Automatické spuštění po startu Windows
 
-Nejjednodušší varianta pro Windows 11 Pro je naplánovaná úloha při
-přihlášení uživatele. Spustí server a potom otevře prohlížeč s hlavní
-obrazovkou.
+PowerShell spusť jako správce. Pokud je projekt v jiné složce než `C:\PrintServer`, změň hodnotu `$dir`.
 
-PowerShell spusť jako správce a vlož:
+### Varianta A — s viditelným oknem
+
+Okno terminálu běží minimalizované v taskbaru. Při kliknutí na okno může zamrznout (Windows QuickEdit).
 
 ```powershell
 $dir = "C:\PrintServer"; $bat = "$dir\autostart.bat"; Set-Content -Path $bat -Encoding ASCII -Value '@echo off', "cd /d $dir", 'start "Print Server" /min "C:\PrintServer\start.bat"', 'timeout /t 8 /nobreak >nul', 'start "" "http://localhost:5000"', 'exit /b'; schtasks /Create /TN "Print Server Autostart" /TR "`"$bat`"" /SC ONLOGON /RL HIGHEST /F
 ```
 
-Příkaz vytvoří `C:\PrintServer\autostart.bat` a naplánovanou úlohu
-`Print Server Autostart`. Po přihlášení do Windows se spustí server a po
-8 sekundách se otevře prohlížeč na `http://localhost:5000`.
+### Varianta B — bez okna (doporučeno pro produkci)
 
-Otestovat bez restartu:
+Server běží na pozadí, viditelný pouze v Task Manageru jako `python.exe`. Pokud server již běží, druhé spuštění se přeskočí.
 
 ```powershell
+$dir = "C:\PrintServer"; Set-Content -Path "$dir\autostart.vbs" -Encoding ASCII -Value 'Dim sh : Set sh = CreateObject("WScript.Shell")', 'Dim wmi : Set wmi = GetObject("winmgmts:")', 'Dim procs : Set procs = wmi.ExecQuery("SELECT * FROM Win32_Process WHERE Name=''python.exe''")', 'If procs.Count = 0 Then sh.Run "cmd /c cd /d C:\PrintServer && start.bat", 0, False', 'WScript.Sleep 8000', 'sh.Run "http://localhost:5000"'; schtasks /Create /TN "Print Server Autostart" /TR "wscript.exe `"C:\PrintServer\autostart.vbs`"" /SC ONLOGON /RL HIGHEST /F
+```
+
+### Test bez restartu
+
+```
 schtasks /Run /TN "Print Server Autostart"
 ```
 
-Pokud je projekt v jiné složce než `C:\PrintServer`, změň v prvním příkazu
-hodnotu `$dir`.
+### Zastavení serveru
 
-```powershell
-$dir = "D:\PrintServer"; Set-Content -Path "$dir\autostart.vbs" -Encoding ASCII -Value "CreateObject(""WScript.Shell"").Run ""cmd /c cd /d D:\PrintServer && start.bat"", 0, False"; $bat = "$dir\autostart.bat"; Set-Content -Path $bat -Encoding ASCII -Value '@echo off', 'timeout /t 8 /nobreak >nul', 'start "" "http://localhost:5000"', 'exit /b'; schtasks /Create /TN "Print Server Autostart" /TR "wscript.exe `"D:\PrintServer\autostart.vbs`"" /SC ONLOGON /RL HIGHEST /F
 ```
-
-Zastavení serveru:
-
-```bat
 taskkill /f /im python.exe
 ```
 
----
+### Odstranění úlohy
+
+```powershell
+schtasks /Delete /TN "Print Server Autostart" /F
+```
 
 ## Nastavení tiskáren
 
