@@ -32,6 +32,10 @@ class Config:
     GPIO_PIN_RIGHT = 22
     GPIO_BOUNCE_MS = 300
 
+    # Plovoucí Windows panel pro tisk bez překlikávání v prohlížeči.
+    # Stejný token musí používat server i tools\floating_print_panel.py.
+    OVERLAY_PRINT_TOKEN = os.environ.get('OVERLAY_PRINT_TOKEN', 'hess-overlay-change-me')
+
     # Logování
     LOG_DIR          = os.path.join(BASE_DIR, 'data', 'logs')
     LOG_FILE         = os.path.join(BASE_DIR, 'data', 'logs', 'printserver.log')

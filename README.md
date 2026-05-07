@@ -292,6 +292,47 @@ Při otevření modalu se vždy vymažou oba předchozí výběry.
 
 ## Trigger na Windows
 
+### Plovoucí panel nad prohlížečem
+
+Pro práci v Cyclades nebo jiném výrobním systému lze použít malé Windows okno
+vždy navrchu. Operátor může mít v Edge/Chrome otevřenou stránku Cyclades a nad
+ní plovoucí panel se dvěma tlačítky:
+
+- `LEVÁ`
+- `PRAVÁ`
+
+Panel volá lokální print server přes tokenem chráněný endpoint:
+
+```http
+POST http://localhost:5000/api/overlay/print/L
+POST http://localhost:5000/api/overlay/print/R
+```
+
+Spuštění panelu:
+
+```bat
+start_floating_panel.bat
+```
+
+Nebo ručně:
+
+```bat
+venv\Scripts\python.exe tools\floating_print_panel.py
+```
+
+Print server musí běžet a musí mít vybraný aktivní produkt / výrobní příkaz.
+Pokud není pro danou stranu vybraný produkt, panel vrátí chybu
+`Žádný produkt nevybrán`.
+
+Bezpečnostní token je v `config.py`:
+
+```python
+OVERLAY_PRINT_TOKEN = 'hess-overlay-change-me'
+```
+
+Pokud se token změní, stejnou hodnotu je potřeba nastavit i pro panel, např.
+přes proměnnou prostředí `OVERLAY_PRINT_TOKEN`.
+
 ### HTTP (výchozí)
 ```
 POST http://localhost:5000/api/debug/gpio/L
@@ -305,6 +346,50 @@ Nebo Debug panel → GPIO → SIMULOVAT.
 GPIO_MODE              = 'serial'
 GPIO_SERIAL_PORT_LEFT  = 'COM3'
 GPIO_SERIAL_PORT_RIGHT = 'COM4'
+```
+
+### Otevřený bod: ESP32 Wi-Fi trigger modul
+
+Do budoucna zvážit malé ESP32 jako samostatný bezdrátový vstupní modul pro
+tisk bez mačkání tlačítek na displeji.
+
+Navržený princip:
+
+- ESP32 vytvoří vlastní Wi-Fi, např. `HESS_PRINT_TRIGGER`.
+- Počítač s print serverem se připojí do této Wi-Fi.
+- ESP32 má fyzické vstupy/tlačítka, např. `IN1`, `IN2`, případně další.
+- Při stisku tlačítka ESP32 pošle HTTP požadavek na print server.
+- Server v Admin → Nastavení mapuje vstupy na strany tiskáren:
+  - `IN1 → LEVÁ`
+  - `IN2 → PRAVÁ`
+  - nepoužité vstupy → vypnuto
+
+Doporučený endpoint pro budoucí implementaci:
+
+```http
+POST /api/hw/input/IN1
+POST /api/hw/input/IN2
+```
+
+ESP32 by nemělo posílat rovnou `L` nebo `R`, ale pouze ID vstupu (`IN1`,
+`IN2`). O mapování na levou/pravou stranu má rozhodovat server podle nastavení.
+To umožní změnit zapojení nebo význam tlačítek bez přehrávání firmware v ESP32.
+
+Doporučené doplnit:
+
+- jednoduchý bezpečnostní token v HTTP hlavičce, např. `X-Trigger-Token`,
+- debounce vstupu cca 300 ms,
+- blokaci opakovaného tisku při držení tlačítka,
+- logování triggeru jako např. `esp32-IN1`,
+- LED indikaci na ESP32: Wi-Fi OK, tisk OK, chyba spojení.
+
+Příklad síťového nastavení pro variantu, kdy ESP32 vytváří Wi-Fi:
+
+```text
+SSID ESP32: HESS_PRINT_TRIGGER
+IP ESP32:  192.168.4.1
+IP PC:     192.168.4.2
+Server:    http://192.168.4.2:5000
 ```
 
 ---

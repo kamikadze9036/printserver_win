@@ -5,6 +5,7 @@ Používá Waitress místo Gunicorn (Gunicorn nefunguje na Windows).
 
 import json
 import atexit
+import hmac
 from functools import wraps
 from datetime import datetime
 
@@ -533,6 +534,24 @@ def api_print(side):
     ok, err = do_print(side, trigger='manual')
     if ok:
         return jsonify({'ok': True})
+    return jsonify({'error': err}), 500
+
+
+@app.post('/api/overlay/print/<side>')
+def api_overlay_print(side):
+    """Tokenem chráněný endpoint pro lokální plovoucí tlačítkový panel."""
+    if side not in ('L', 'R'):
+        return jsonify({'error': 'Neplatná strana'}), 400
+
+    expected = str(getattr(Config, 'OVERLAY_PRINT_TOKEN', '') or '')
+    supplied = request.headers.get('X-Print-Token', '')
+    if not expected or not hmac.compare_digest(supplied, expected):
+        log.warning(f"Overlay tisk odmítnut: strana={side} ip={request.remote_addr}")
+        return jsonify({'error': 'Neplatný token'}), 403
+
+    ok, err = do_print(side, trigger='overlay')
+    if ok:
+        return jsonify({'ok': True, 'side': side})
     return jsonify({'error': err}), 500
 
 
