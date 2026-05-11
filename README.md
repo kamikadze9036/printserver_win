@@ -117,20 +117,22 @@ Změňte hesla po prvním přihlášení v Admin → Uživatelé.
 
 PowerShell spusť jako správce. Pokud je projekt v jiné složce než `C:\PrintServer`, změň hodnotu `$dir`.
 
-### Varianta A — s viditelným oknem
+### Varianta A — server + prohlížeč + floating panel
 
-Okno terminálu běží minimalizované v taskbaru. Při kliknutí na okno může zamrznout (Windows QuickEdit).
+Spustí server, otevře `http://localhost:5000` a zapne plovoucí panel
+`LEVÁ` / `PRAVÁ`.
 
 ```powershell
-$dir = "C:\PrintServer"; $bat = "$dir\autostart.bat"; Set-Content -Path $bat -Encoding ASCII -Value '@echo off', "cd /d $dir", 'start "Print Server" /min "C:\PrintServer\start.bat"', 'timeout /t 8 /nobreak >nul', 'start "" "http://localhost:5000"', 'exit /b'; schtasks /Create /TN "Print Server Autostart" /TR "`"$bat`"" /SC ONLOGON /RL HIGHEST /F
+$dir = "C:\PrintServer"; schtasks /Create /TN "Print Server Autostart" /TR "`"$dir\start_all.bat`"" /SC ONLOGON /RL HIGHEST /F
 ```
 
-### Varianta B — bez okna (doporučeno pro produkci)
+### Varianta B — server bez okna + prohlížeč + floating panel
 
-Server běží na pozadí, viditelný pouze v Task Manageru jako `python.exe`. Pokud server již běží, druhé spuštění se přeskočí.
+Server běží na pozadí, viditelný pouze v Task Manageru jako `python.exe`.
+Prohlížeč a floating panel se otevřou normálně.
 
 ```powershell
-$dir = "C:\PrintServer"; Set-Content -Path "$dir\autostart.vbs" -Encoding ASCII -Value 'Dim sh : Set sh = CreateObject("WScript.Shell")', 'Dim wmi : Set wmi = GetObject("winmgmts:")', 'Dim procs : Set procs = wmi.ExecQuery("SELECT * FROM Win32_Process WHERE Name=''python.exe''")', 'If procs.Count = 0 Then sh.Run "cmd /c cd /d C:\PrintServer && start.bat", 0, False', 'WScript.Sleep 8000', 'sh.Run "http://localhost:5000"'; schtasks /Create /TN "Print Server Autostart" /TR "wscript.exe `"C:\PrintServer\autostart.vbs`"" /SC ONLOGON /RL HIGHEST /F
+$dir = "C:\PrintServer"; Set-Content -Path "$dir\autostart.vbs" -Encoding ASCII -Value 'Dim sh : Set sh = CreateObject("WScript.Shell")', 'Dim wmi : Set wmi = GetObject("winmgmts:")', 'Dim procs : Set procs = wmi.ExecQuery("SELECT * FROM Win32_Process WHERE Name=''python.exe''")', 'If procs.Count = 0 Then sh.Run "cmd /c cd /d C:\PrintServer && start.bat", 0, False', 'WScript.Sleep 8000', 'sh.Run "http://localhost:5000"', 'sh.Run "cmd /c cd /d C:\PrintServer && start_floating_panel.bat", 0, False'; schtasks /Create /TN "Print Server Autostart" /TR "wscript.exe `"C:\PrintServer\autostart.vbs`"" /SC ONLOGON /RL HIGHEST /F
 ```
 
 ### Test bez restartu

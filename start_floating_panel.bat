@@ -8,4 +8,8 @@ if not exist "venv\Scripts\python.exe" (
     exit /b 1
 )
 
-start "HESS Print Panel" venv\Scripts\python.exe tools\floating_print_panel.py
+if exist "venv\Scripts\pythonw.exe" (
+    start "HESS Print Panel" "venv\Scripts\pythonw.exe" "tools\floating_print_panel.py"
+) else (
+    start "HESS Print Panel" "venv\Scripts\python.exe" "tools\floating_print_panel.py"
+)
