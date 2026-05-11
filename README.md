@@ -119,7 +119,14 @@ Změňte hesla po prvním přihlášení v Admin → Uživatelé.
 6. http://localhost:5000
 ```
 
+`install.bat` zároveň nastaví naplánovanou úlohu `Print Server Autostart`,
+která po přihlášení do Windows spustí server, otevře prohlížeč a zapne
+floating panel.
+
 ## Automatické spuštění po startu Windows
+
+`install.bat` vytváří úlohu `Print Server Autostart` automaticky. Níže uvedené
+příkazy použij jen pro ruční nastavení, opravu nebo změnu existující úlohy.
 
 PowerShell spusť jako správce. Pokud je projekt v jiné složce než `C:\PrintServer`, změň hodnotu `$dir`.
 
