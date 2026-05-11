@@ -42,18 +42,18 @@ class FloatingPrintPanel:
             "Left.TButton",
             font=("Segoe UI", 15, "bold"),
             padding=(10, 16),
-            background="#2563eb",
+            background="#E8A000",
             foreground="#ffffff",
         )
-        style.map("Left.TButton", background=[("active", "#1d4ed8")])
+        style.map("Left.TButton", background=[("active", "#C98900")])
         style.configure(
             "Right.TButton",
             font=("Segoe UI", 15, "bold"),
             padding=(10, 16),
-            background="#7c3aed",
+            background="#2F6EA5",
             foreground="#ffffff",
         )
-        style.map("Right.TButton", background=[("active", "#6d28d9")])
+        style.map("Right.TButton", background=[("active", "#285F8E")])
 
         title = tk.Label(
             self.root,
