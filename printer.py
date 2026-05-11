@@ -216,12 +216,10 @@ def print_label(side, template_row, product, username):
 
     try:
         import win32print
-        printers    = _list_printers()
         use_default = (not printer_name or
                        printer_name in ('LABEL_PRINTER_LEFT', 'LABEL_PRINTER_RIGHT'))
-        if use_default or printer_name in printers:
-            _print_win32(printer_name if not use_default else '', data_bytes)
-            return True, None
+        _print_win32(printer_name if not use_default else '', data_bytes)
+        return True, None
     except ImportError:
         pass
     except Exception as e:
