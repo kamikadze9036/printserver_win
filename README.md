@@ -58,6 +58,7 @@ printserver_win/
 │   └── debug.js            # Debug panel logika
 ├── data/
 │   ├── printserver.db      # SQLite databáze (vše)
+│   ├── printserver_template.db # Výchozí produkční šablona DB pro nové instalace
 │   ├── last_print_L.prn    # Poslední TSPL levá (debug)
 │   ├── last_print_R.prn    # Poslední TSPL pravá (debug)
 │   └── logs/
@@ -82,6 +83,11 @@ Vše v jednom souboru: `data\printserver.db`
 | `print_log` | Log každého tisku |
 
 **Seed data** — vkládají se pouze při prázdné DB (první spuštění nebo po reset_db.bat). Restart serveru s existující DB nic nepřidá.
+
+**Výchozí DB pro nové instalace** — pokud `data\printserver.db` neexistuje a
+vedle ní je `data\printserver_template.db`, server ji při startu zkopíruje jako
+novou hlavní databázi. Nové verze tak nezačínají z malé demo databáze, ale ze
+schváleného základu s produkty, šablonami, uživateli a nastavením tiskáren.
 
 **Zálohování / přenos na jiný počítač** — stačí zkopírovat `data\printserver.db`. Server při kopírování ideálně vypni. Pokud vedle DB existují soubory `printserver.db-wal` nebo `printserver.db-shm`, zkopíruj je také, případně nejdřív server korektně ukonči.
 

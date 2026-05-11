@@ -15,8 +15,10 @@ venv/
 env/
 
 # Runtime data
-data/
+data/*
+!data/printserver_template.db
 *.db
+!data/printserver_template.db
 *.db-shm
 *.db-wal
 *.prn

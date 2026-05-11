@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import shutil
 from config import Config
 
 
@@ -13,6 +14,10 @@ def get_db():
 
 def init_db():
     os.makedirs(os.path.dirname(Config.DATABASE), exist_ok=True)
+    template_db = os.path.join(os.path.dirname(Config.DATABASE), 'printserver_template.db')
+    if not os.path.exists(Config.DATABASE) and os.path.exists(template_db):
+        shutil.copy2(template_db, Config.DATABASE)
+
     with get_db() as db:
         db.executescript("""
         CREATE TABLE IF NOT EXISTS users (
