@@ -40,6 +40,14 @@ log.info("=== Hess Print Server (Windows) start ===")
 print_state = {'L': None, 'R': None}
 active_order_id = None   # ID aktivniho VP
 
+
+def _truthy(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    return str(value or '').strip().lower() in ('1', 'true', 'yes', 'on', 'ano')
+
 # Obnov aktivni VP z DB
 try:
     _active = get_active_order()
@@ -233,6 +241,7 @@ def api_product_create():
     txt3        = data.get('text3', '')
     txt4        = data.get('text4', '')
     side        = data.get('side', 'both')
+    highlight_right = 1 if _truthy(data.get('highlight_right')) else 0
     template_id = data.get('template_id') or None
     if side not in ('L', 'R', 'both'):
         side = 'both'
@@ -240,7 +249,7 @@ def api_product_create():
         return jsonify({'error': 'Kód a QR obsah jsou povinné'}), 400
     with get_db() as db:
         try:
-            db.execute("INSERT INTO products (product_code, qr_content, text_content, text2, text3, text4, side, template_id) VALUES (?,?,?,?,?,?,?,?)", (code, qr, txt, txt2, txt3, txt4, side, template_id))
+            db.execute("INSERT INTO products (product_code, qr_content, text_content, text2, text3, text4, side, highlight_right, template_id) VALUES (?,?,?,?,?,?,?,?,?)", (code, qr, txt, txt2, txt3, txt4, side, highlight_right, template_id))
         except Exception as e:
             return jsonify({'error': str(e)}), 409
     return jsonify({'ok': True}), 201
@@ -250,12 +259,13 @@ def api_product_create():
 def api_product_update(pid):
     data = request.json or {}
     side        = data.get('side', 'both')
+    highlight_right = 1 if _truthy(data.get('highlight_right')) else 0
     template_id = data.get('template_id') or None
     if side not in ('L', 'R', 'both'):
         side = 'both'
     with get_db() as db:
-        db.execute("UPDATE products SET product_code=?, qr_content=?, text_content=?, text2=?, text3=?, text4=?, side=?, template_id=?, updated_at=datetime('now') WHERE id=?",
-                   (data.get('product_code','').strip().upper(), data.get('qr_content',''), data.get('text_content',''), data.get('text2',''), data.get('text3',''), data.get('text4',''), side, template_id, pid))
+        db.execute("UPDATE products SET product_code=?, qr_content=?, text_content=?, text2=?, text3=?, text4=?, side=?, highlight_right=?, template_id=?, updated_at=datetime('now') WHERE id=?",
+                   (data.get('product_code','').strip().upper(), data.get('qr_content',''), data.get('text_content',''), data.get('text2',''), data.get('text3',''), data.get('text4',''), side, highlight_right, template_id, pid))
     return jsonify({'ok': True})
 
 @app.delete('/api/products/<int:pid>')
@@ -311,6 +321,7 @@ def api_products_csv_preview():
             'text3':         row.get('text3', ''),
             'text4':         row.get('text4', ''),
             'side':          row.get('side', 'both').strip() or 'both',
+            'highlight_right': 1 if _truthy(row.get('highlight_right')) else 0,
             'template_id':   tid,
             'template_name': templates.get(tid, '—') if tid else '—',
             'duplicate':     code in existing,
@@ -340,6 +351,7 @@ def api_products_csv_import():
             txt3 = row.get('text3', '')
             txt4 = row.get('text4', '')
             side = row.get('side', 'both').strip() or 'both'
+            highlight_right = 1 if _truthy(row.get('highlight_right')) else 0
             if side not in ('L', 'R', 'both'):
                 side = 'both'
             tid = row.get('template_id') or None
@@ -349,8 +361,8 @@ def api_products_csv_import():
                 tid = None
             try:
                 db.execute(
-                    "INSERT INTO products (product_code, qr_content, text_content, text2, text3, text4, side, template_id) VALUES (?,?,?,?,?,?,?,?)",
-                    (code, qr, txt, txt2, txt3, txt4, side, tid)
+                    "INSERT INTO products (product_code, qr_content, text_content, text2, text3, text4, side, highlight_right, template_id) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (code, qr, txt, txt2, txt3, txt4, side, highlight_right, tid)
                 )
                 existing.add(code)
                 imported += 1
@@ -369,14 +381,14 @@ def api_products_csv_export():
     products = get_all_products()
     out = io.StringIO()
     writer = csv.writer(out)
-    writer.writerow(['product_code', 'qr_content', 'text_content', 'text2', 'text3', 'text4', 'side', 'template_id'])
+    writer.writerow(['product_code', 'qr_content', 'text_content', 'text2', 'text3', 'text4', 'side', 'highlight_right', 'template_id'])
     for p in products:
         writer.writerow([
             p['product_code'], p['qr_content'], p['text_content'],
             p['text2'] if 'text2' in p.keys() else '',
             p['text3'] if 'text3' in p.keys() else '',
             p['text4'] if 'text4' in p.keys() else '',
-            p['side'], p['template_id'] or ''
+            p['side'], p['highlight_right'] if 'highlight_right' in p.keys() else 0, p['template_id'] or ''
         ])
     from flask import Response
     return Response(

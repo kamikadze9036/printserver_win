@@ -47,7 +47,7 @@ async function loadProducts() {
     tbody.innerHTML = rows.map(p => `
       <tr>
         <td class="td-mono td-bold">${escHtml(p.product_code)}</td>
-        <td>${sideLabel[p.side] || sideLabel['both']}</td>
+        <td>${sideLabel[p.side] || sideLabel['both']} ${Number(p.highlight_right || 0) ? '<span class="badge" style="background:#111;color:#fff;margin-left:4px">INV R</span>' : ''}</td>
         <td style="font-size:12px">${p.template_id ? escHtml(tmplMap[p.template_id] || '?') : '<span style="color:var(--err)">⚠ není</span>'}</td>
         <td class="td-mono" style="font-size:11px;color:var(--grey-dk)">${escHtml(p.qr_content)}</td>
         <td>${escHtml(p.text_content)}</td>
@@ -62,6 +62,7 @@ async function loadProducts() {
             data-txt3="${escHtml(p.text3||'')}"
             data-txt4="${escHtml(p.text4||'')}"
             data-side="${p.side||'both'}"
+            data-highlight-right="${Number(p.highlight_right || 0)}"
             data-tmpl="${p.template_id||''}"
             onclick="openProductModalFromBtn(this)">UPRAVIT</button>
           <button class="btn btn-blue btn-sm"
@@ -72,6 +73,7 @@ async function loadProducts() {
             data-txt3="${escHtml(p.text3||'')}"
             data-txt4="${escHtml(p.text4||'')}"
             data-side="${p.side||'both'}"
+            data-highlight-right="${Number(p.highlight_right || 0)}"
             data-tmpl="${p.template_id||''}"
             onclick="duplicateProductFromBtn(this)">DUPLIKOVAT</button>
           <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id}, this)">SMAZAT</button>
@@ -86,7 +88,7 @@ async function loadProducts() {
 function openProductModalFromBtn(btn) {
   const id  = parseInt(btn.dataset.id) || '';
   const tid = btn.dataset.tmpl ? parseInt(btn.dataset.tmpl) : null;
-  openProductModal(id, btn.dataset.code, btn.dataset.qr, btn.dataset.txt, btn.dataset.side, tid, btn.dataset.txt2||'', btn.dataset.txt3||'', btn.dataset.txt4||'');
+  openProductModal(id, btn.dataset.code, btn.dataset.qr, btn.dataset.txt, btn.dataset.side, tid, btn.dataset.txt2||'', btn.dataset.txt3||'', btn.dataset.txt4||'', btn.dataset.highlightRight === '1');
 }
 
 function makeProductCopyCode(code) {
@@ -112,6 +114,7 @@ async function duplicateProductFromBtn(btn) {
     text3: btn.dataset.txt3 || '',
     text4: btn.dataset.txt4 || '',
     side: btn.dataset.side || 'both',
+    highlight_right: btn.dataset.highlightRight === '1',
     template_id: tid,
   };
   btn.disabled = true;
@@ -121,7 +124,7 @@ async function duplicateProductFromBtn(btn) {
     await loadProducts();
     const copy = _products.find(p => p.product_code === copyCode);
     if (copy) {
-      openProductModal(copy.id, copy.product_code, copy.qr_content, copy.text_content, copy.side, copy.template_id, copy.text2||'', copy.text3||'', copy.text4||'');
+      openProductModal(copy.id, copy.product_code, copy.qr_content, copy.text_content, copy.side, copy.template_id, copy.text2||'', copy.text3||'', copy.text4||'', Number(copy.highlight_right || 0) === 1);
     }
   } catch (e) {
     toast('Chyba duplikace: ' + e.message, true);
@@ -130,7 +133,7 @@ async function duplicateProductFromBtn(btn) {
   }
 }
 
-async function openProductModal(id='', code='', qr='', txt='', side='both', templateId=null, txt2='', txt3='', txt4='') {
+async function openProductModal(id='', code='', qr='', txt='', side='both', templateId=null, txt2='', txt3='', txt4='', highlightRight=false) {
   await ensureTemplates();
   // Naplň select šablon
   const tmplSel = document.getElementById('mp-template');
@@ -147,6 +150,7 @@ async function openProductModal(id='', code='', qr='', txt='', side='both', temp
   document.getElementById('mp-txt3').value = txt3;
   document.getElementById('mp-txt4').value = txt4;
   document.getElementById('mp-side').value = side || 'both';
+  document.getElementById('mp-highlight-right').checked = !!highlightRight;
   document.getElementById('modal-product-title').textContent = id ? 'UPRAVIT PRODUKT' : 'NOVÝ PRODUKT';
   document.getElementById('modal-product').classList.remove('hidden');
   setTimeout(() => document.getElementById('mp-code').focus(), 100);
@@ -161,15 +165,16 @@ async function saveProduct() {
   const txt3 = document.getElementById('mp-txt3').value;
   const txt4 = document.getElementById('mp-txt4').value;
   const side       = document.getElementById('mp-side').value;
+  const highlightRight = document.getElementById('mp-highlight-right').checked;
   const templateId = document.getElementById('mp-template').value || null;
   if (!code || !qr) { toast('Kód a QR jsou povinné.', true); return; }
 
   try {
     if (id) {
-      await api('/api/products/' + id, {method: 'PUT', body: JSON.stringify({product_code: code, qr_content: qr, text_content: txt, text2: txt2, text3: txt3, text4: txt4, side, template_id: templateId ? parseInt(templateId) : null})});
+      await api('/api/products/' + id, {method: 'PUT', body: JSON.stringify({product_code: code, qr_content: qr, text_content: txt, text2: txt2, text3: txt3, text4: txt4, side, highlight_right: highlightRight, template_id: templateId ? parseInt(templateId) : null})});
       toast('Produkt upraven.');
     } else {
-      await api('/api/products', {method: 'POST', body: JSON.stringify({product_code: code, qr_content: qr, text_content: txt, text2: txt2, text3: txt3, text4: txt4, side, template_id: templateId ? parseInt(templateId) : null})});
+      await api('/api/products', {method: 'POST', body: JSON.stringify({product_code: code, qr_content: qr, text_content: txt, text2: txt2, text3: txt3, text4: txt4, side, highlight_right: highlightRight, template_id: templateId ? parseInt(templateId) : null})});
       toast('Produkt přidán.');
     }
     closeModal('modal-product');

@@ -200,6 +200,7 @@ Nastav v UI: \\.\USB001
 | Textový obsah | Text vedle QR kódu |
 | Strana | LEVÁ / PRAVÁ / OBĚ |
 | Šablona | Přiřazená šablona štítku |
+| Zvýraznit pravou stranu | Při tisku na pravé tiskárně podbarví/invertuje hlavní text (`text_content`) |
 
 Naskenování produktu na špatnou stranu → červená chyba, nelze potvrdit.
 
@@ -208,6 +209,11 @@ Produkt bez šablony → oranžové varování v admin tabulce (⚠ není).
 Šablonu nelze smazat pokud ji používá produkt — nejprve odeber šablonu z produktů.
 
 **Duplikace produktu:** Admin → Produkty → **DUPLIKOVAT** vytvoří kopii se stejným QR obsahem, texty, stranou i šablonou. Nový kód bude například `PŮVODNÍ_KÓD COPY`, případně `COPY 2`, `COPY 3` atd.
+
+**Zvýraznění pravé strany:** Admin → Produkty → zaškrtnout **Zvýraznit hlavní
+text při tisku na pravé straně**. Šablona zůstává stejná pro levou i pravou
+stranu; volba je uložená u produktu. Při tisku na pravé tiskárně se zvýrazní
+prvek šablony, jehož obsah používá `{text_content}` nebo `{text1}`.
 
 ---
 

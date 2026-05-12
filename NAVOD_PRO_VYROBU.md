@@ -93,13 +93,28 @@ Každá strana má vlastní část obrazovky:
 Tisk může proběhnout dvěma způsoby:
 
 1. Ručně tlačítkem `TISKNOUT LEVOU` nebo `TISKNOUT PRAVOU`.
-2. Automaticky pomocí vstupu ze stroje / tlačítka, pokud je zapojený trigger.
+2. Plovoucím panelem `LEVÁ` / `PRAVÁ`, který zůstává navrchu nad prohlížečem.
+3. Automaticky pomocí vstupu ze stroje / tlačítka, pokud je zapojený trigger.
 
 Když je vše připraveno, stav u strany svítí jako `READY`.
 
 Po úspěšném tisku se zobrazí potvrzení a záznam se uloží do historie tisku.
 V historii je vidět datum, čas, operátor, produkt, strana, šablona, způsob
 spuštění a výsledek.
+
+### Plovoucí panel nad Cyclades
+
+Pokud operátor pracuje v Cyclades nebo jiném výrobním systému v prohlížeči,
+může používat malé plovoucí okno `HESS PRINT`.
+
+Panel má dvě tlačítka:
+
+- žluté `LEVÁ`,
+- modré `PRAVÁ`.
+
+Okno zůstává navrchu nad Edge/Chrome, takže není potřeba přepínat na záložku
+print serveru. Panel tiskne aktuálně připravený produkt pro levou nebo pravou
+stranu. Produkt a výrobní příkaz se stále vybírají v print serveru.
 
 ---
 
@@ -167,6 +182,10 @@ V admin panelu lze spravovat:
 - nastavení tiskáren,
 - historii výrobních příkazů.
 
+U produktu lze také nastavit zvýraznění hlavního textu při tisku na pravé
+straně. Používá se pro rychlé rozlišení pravé etikety bez vytváření samostatné
+šablony pro levou a pravou stranu.
+
 Bez konzultace se správcem neměň:
 
 - názvy tiskáren,
@@ -204,4 +223,3 @@ Správce volej, pokud:
 - etiketa se tiskne posunutá nebo ve špatné velikosti,
 - je potřeba přidat nebo upravit uživatele,
 - je potřeba měnit nastavení tiskárny.
-

@@ -53,7 +53,7 @@
           <tr><th>Kód produktu</th><th>Strana</th><th>Šablona</th><th>QR obsah</th><th>Text na štítku</th><th>Upraveno</th><th style="width:230px">Akce</th></tr>
         </thead>
         <tbody id="product-table">
-          <tr><td colspan="5" class="td-loading">Načítám…</td></tr>
+          <tr><td colspan="7" class="td-loading">Načítám…</td></tr>
         </tbody>
       </table>
     </div>
@@ -331,6 +331,13 @@
           <option value="R">PRAVÁ tiskárna</option>
           <option value="both" selected>OBĚ (lze tisknout na obě strany)</option>
         </select>
+      </div>
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0">
+          <input type="checkbox" id="mp-highlight-right" style="width:auto" />
+          Zvýraznit hlavní text při tisku na pravé straně
+        </label>
+        <span class="field-hint">Použije stejnou šablonu, ale na pravé tiskárně vytiskne hlavní text inverzně/podbarveně.</span>
       </div>
       <div class="field">
         <label>Šablona štítku</label>

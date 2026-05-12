@@ -45,6 +45,27 @@ def resolve_variables(text, product, username):
     return text
 
 
+def _row_get(row, key, default=None):
+    if isinstance(row, dict):
+        return row.get(key, default)
+    try:
+        if key in row.keys():
+            return row[key]
+    except Exception:
+        pass
+    return default
+
+
+def _should_highlight_right_text(product, side, content):
+    if side != 'R':
+        return False
+    highlight = str(_row_get(product, 'highlight_right', 0) or '').strip().lower()
+    if highlight not in ('1', 'true', 'yes', 'on', 'ano'):
+        return False
+    content = content or ''
+    return '{text_content}' in content or '{text1}' in content
+
+
 # ════════════════════════════════════════
 #  TSPL GENERATOR
 #  Pozice v mm, font v uvozovkach
@@ -96,6 +117,10 @@ def generate_tspl(template_row, product, username, side='L'):
             lines.append('TEXT {},{},"{}",0,1,1,"{}"'.format(
                 x, y, font, text_escaped
             ))
+            if _should_highlight_right_text(product, side, el_content):
+                w_dots = int(round(float(el.get('w', 20)) * dpi / 25.4))
+                h_dots = int(round(float(el.get('h', 6)) * dpi / 25.4))
+                lines.append('REVERSE {},{},{},{}'.format(x, y, w_dots, h_dots))
 
     lines += ["PRINT 1", ""]
     return '\r\n'.join(lines)
@@ -141,9 +166,17 @@ def generate_zpl(template_row, product, username, side='L'):
         elif etype == 'text':
             text = resolve_variables(el_content, product, username)
             fh   = max(20, int(el.get('font_size', 8) * dpi / 25.4 * 0.35))
+            reverse = _should_highlight_right_text(product, side, el_content)
+            if reverse:
+                box_w = max(1, mm2dots(el.get('w', 20), dpi))
+                box_h = max(fh + 4, mm2dots(el.get('h', 6), dpi))
+                lines += [
+                    "^FO{},{}".format(x, y),
+                    "^GB{},{},{},B,0^FS".format(box_w, box_h, box_h),
+                ]
             lines += [
                 "^FO{},{}".format(x, y),
-                "^A0N,{},{}".format(fh, fh),
+                "{}^A0N,{},{}".format("^FR" if reverse else "", fh, fh),
                 "^FD{}^FS".format(text.replace('^', '').replace('~', '')),
             ]
 

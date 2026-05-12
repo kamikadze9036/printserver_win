@@ -37,6 +37,7 @@ def init_db():
             text3         TEXT    NOT NULL DEFAULT '',
             text4         TEXT    NOT NULL DEFAULT '',
             side          TEXT    NOT NULL DEFAULT 'both',
+            highlight_right INTEGER NOT NULL DEFAULT 0,
             template_id   INTEGER REFERENCES templates(id),
             created_at    TEXT    DEFAULT (datetime('now')),
             updated_at    TEXT    DEFAULT (datetime('now'))
@@ -120,6 +121,12 @@ def init_db():
             except Exception:
                 pass  # Sloupec uz existuje
 
+        # Migrace: zvyrazneni/inverze prave strany podle produktu
+        try:
+            db.execute("ALTER TABLE products ADD COLUMN highlight_right INTEGER NOT NULL DEFAULT 0")
+        except Exception:
+            pass  # Sloupec uz existuje
+
         # Výchozí admin účet (heslo: admin123)
         from werkzeug.security import generate_password_hash
         db.execute("""
@@ -156,12 +163,12 @@ def init_db():
             first_tmpl = db.execute("SELECT id FROM templates LIMIT 1").fetchone()
             tmpl_id = first_tmpl['id'] if first_tmpl else None
             db.executemany("""
-                INSERT INTO products (product_code, qr_content, text_content, text2, text3, text4, side, template_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO products (product_code, qr_content, text_content, text2, text3, text4, side, highlight_right, template_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, [
-            ('FG 001235', 'https://erp.local/fg/001235', 'MOTOR SESTAVA A / LOT 2024Q4', '', '', '', 'L', tmpl_id),
-            ('FG 001234', 'https://erp.local/fg/001234', 'MOTOR SESTAVA B / LOT 2024Q4', '', '', '', 'R', tmpl_id),
-            ('FG 000877', 'https://erp.local/fg/000877', 'KRYT PREVODOVKY XL / 2025Q1',  '', '', '', 'both', tmpl_id),
+            ('FG 001235', 'https://erp.local/fg/001235', 'MOTOR SESTAVA A / LOT 2024Q4', '', '', '', 'L', 0, tmpl_id),
+            ('FG 001234', 'https://erp.local/fg/001234', 'MOTOR SESTAVA B / LOT 2024Q4', '', '', '', 'R', 1, tmpl_id),
+            ('FG 000877', 'https://erp.local/fg/000877', 'KRYT PREVODOVKY XL / 2025Q1',  '', '', '', 'both', 0, tmpl_id),
         ])
 
 
