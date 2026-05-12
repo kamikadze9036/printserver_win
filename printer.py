@@ -63,7 +63,22 @@ def _should_highlight_right_text(product, side, content):
     if highlight not in ('1', 'true', 'yes', 'on', 'ano'):
         return False
     content = content or ''
-    return '{text_content}' in content or '{text1}' in content
+    return any(token in content for token in (
+        '{text_content}', '{text1}', '{text2}', '{text3}', '{text4}'
+    ))
+
+
+def _highlight_box_mm(template_row, el):
+    w_mm = float(template_row['width_mm'])
+    h_mm = float(template_row['height_mm'])
+    x_mm = float(el.get('x', 0))
+    y_mm = float(el.get('y', 0))
+    h_el = float(el.get('h', 6))
+    # Zvyrazneni ma byt videt pres celou textovou radku, ne jen pres sirku
+    # textoveho prvku. Sablony casto pouzivaji uzky box a text fyzicky preteka.
+    box_w = max(1, w_mm - x_mm)
+    box_h = max(1, min(h_el, h_mm - y_mm))
+    return x_mm, y_mm, box_w, box_h
 
 
 # ════════════════════════════════════════
@@ -118,9 +133,11 @@ def generate_tspl(template_row, product, username, side='L'):
                 x, y, font, text_escaped
             ))
             if _should_highlight_right_text(product, side, el_content):
-                w_dots = int(round(float(el.get('w', 20)) * dpi / 25.4))
-                h_dots = int(round(float(el.get('h', 6)) * dpi / 25.4))
-                lines.append('REVERSE {},{},{},{}'.format(x, y, w_dots, h_dots))
+                bx, by, bw, bh = _highlight_box_mm(template_row, el)
+                lines.append('REVERSE {},{},{},{}'.format(
+                    mm2dots(bx, dpi), mm2dots(by, dpi),
+                    mm2dots(bw, dpi), mm2dots(bh, dpi)
+                ))
 
     lines += ["PRINT 1", ""]
     return '\r\n'.join(lines)
@@ -168,10 +185,11 @@ def generate_zpl(template_row, product, username, side='L'):
             fh   = max(20, int(el.get('font_size', 8) * dpi / 25.4 * 0.35))
             reverse = _should_highlight_right_text(product, side, el_content)
             if reverse:
-                box_w = max(1, mm2dots(el.get('w', 20), dpi))
-                box_h = max(fh + 4, mm2dots(el.get('h', 6), dpi))
+                bx, by, bw, bh = _highlight_box_mm(template_row, el)
+                box_w = max(1, mm2dots(bw, dpi))
+                box_h = max(fh + 4, mm2dots(bh, dpi))
                 lines += [
-                    "^FO{},{}".format(x, y),
+                    "^FO{},{}".format(mm2dots(bx, dpi), mm2dots(by, dpi)),
                     "^GB{},{},{},B,0^FS".format(box_w, box_h, box_h),
                 ]
             lines += [
